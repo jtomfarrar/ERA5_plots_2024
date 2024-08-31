@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Make plots of ERA5 surface conditions at Papa, WHOTS, NTAS, Stratus
+Make plots of ERA5 surface conditions at NORSE site
 
-Created on Fri Jan 22 19:38:04 2021
+Modified from ERA5_NORSE_plots.py (from ERA5_plots repo) Aug 30 2024
 
 @author: jtomfarrar
 jfarrar@whoi.edu
@@ -143,6 +143,8 @@ plt.legend(['Zonal wind','Meridional wind'])
 plt.ylabel('[m/s]')
 plt.savefig(__figdir__+'_Met_summary',**savefig_args)
 
+# %%
+
 #############################
 # Met plot time series
 # Try doing plot with matplotlib API approach:
@@ -179,8 +181,9 @@ plt.savefig(__figdir__+'_Met_zoom',**savefig_args)
 
 
 #############################
+# %%
 # Site map
-lcc_params={'projection':'lcc', 'lat_1':lat_pt-5,'lat_2':lat_pt+5,'lat_0':lat_pt,'lon_0':lon_pt,'width':10*10**6,'height':10*10**6, 'resolution':'h'}
+lcc_params={'projection':'lcc', 'lat_1':lat_pt-5,'lat_2':lat_pt+5,'lat_0':lat_pt,'lon_0':lon_pt,'width':5*10**6,'height':5*10**6, 'resolution':'h'}
 ortho_params = {'projection':'ortho','lat_0':lat_pt,'lon_0':lon_pt,'resolution':'l'}
 dx=5
 dy=5
@@ -203,6 +206,7 @@ map.plot(xpt, ypt, marker='D',color='m')
 map.quiver(xpt,ypt,np.mean(u0),np.mean(v0),scale=10,scale_units='inches',color='k')
 plt.savefig(__figdir__+'_map',**savefig_args)
 
+# %%
 #############################
 # Wind/wave statistics
 fig = plt.figure(figsize=(8,4))
@@ -221,3 +225,5 @@ plt.savefig(__figdir__+'_stats',**savefig_args)
 
 
 
+
+# %%
