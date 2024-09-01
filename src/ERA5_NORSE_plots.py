@@ -59,7 +59,7 @@ path = r"./"
 
 # %%
 # Get a list of all relevant .nc files
-site_name = 'NORSE'
+site_name = 'NORSE_foo'
 filenames = glob.glob(path+'/ERA5_surface_'+ site_name +'_*.nc')
 if len(filenames)==1:
     ERA = xr.open_dataset(filenames[0])
@@ -67,7 +67,7 @@ else:
     ERA = xr.open_mfdataset(filenames,combine='nested',concat_dim='time')
 
 # %%
-time = ERA.time  # 'days since 1950-01-01 00:00:00'
+time = ERA.valid_time  # 'days since 1950-01-01 00:00:00'
 
 tind = 0
 sst = ERA.sst[tind,:,:]-273.15
@@ -78,6 +78,8 @@ V = ERA.v10[tind,:,:]
 lon = ERA.longitude
 lat = ERA.latitude
 lonmesh, latmesh = np.meshgrid(lon, lat)
+
+# %%
 # There is something off with SWH-- it seems the resolution is half as fine and
 #   and the data have been padded to have the same shape as SST, etc
 ny, nx= np.shape(swh)
@@ -95,6 +97,7 @@ atmp0 = ERA.t2m[:,ffy,ffx]-273.15
 u0 = ERA.u10[:,ffy,ffx]
 v0 = ERA.v10[:,ffy,ffx]
 
+# %%
 # Wave parameters are on a lower-res lat/lon grid:
 ffxW = np.where(np.abs(lonW[:].data-lon_pt)==np.min(np.abs(lonW[:].data-lon_pt)))
 ffyW = np.where(np.abs(latW[:].data-lat_pt)==np.min(np.abs(latW[:].data-lat_pt)))
