@@ -56,7 +56,7 @@ filename = path + 'ERA5_surface_' + site_name + '_big_2023.nc'
 ERA = xr.open_dataset(filename)
 
 # %%
-def plot_map(ERA,tind):
+def plot_map(ERA,tind,lev):
     sst = ERA.sst[tind,:,:]-273.15
     atmp = ERA.t2m[tind,:,:]-273.15
     U = ERA.u10[tind,:,:]
@@ -72,7 +72,7 @@ def plot_map(ERA,tind):
     map.drawcountries()
     #map.drawmapboundary(fill_color='aqua')
     map.fillcontinents(lake_color='aqua')
-    map.contourf(x, y , atmp, cmap='coolwarm', levels=30)
+    map.contourf(x, y , atmp, cmap='coolwarm', levels=lev)
     map.drawcoastlines()
     map.drawparallels(range(-90, 90, 15),labels=[1,0,0,0]) #labels = [left,right,top,bottom]
     map.drawmeridians(range(0, 360, 15), labels=[0,0,0,1]) #  labels=[1,0,0,1]
@@ -82,7 +82,8 @@ def plot_map(ERA,tind):
     map.plot(xpt, ypt, marker='D',color='m')
     # map.quiver(xpt,ypt,np.mean(u0),np.mean(v0),scale=10,scale_units='inches',color='k')
     skipx, skipy = 7, 2
-    map.quiver(x[1:-1:skipy,1:-1:skipx],y[1:-1:skipy,1:-1:skipx],U[1:-1:skipy,1:-1:skipx],V[1:-1:skipy,1:-1:skipx],color='k')
+    scale = 500 
+    map.quiver(x[1:-1:skipy,1:-1:skipx],y[1:-1:skipy,1:-1:skipx],U[1:-1:skipy,1:-1:skipx],V[1:-1:skipy,1:-1:skipx],scale_units='width', scale = scale,color='k')
 
 
 # %%
@@ -105,8 +106,9 @@ cyl_params={'projection':'cyl', 'lat_1':lat_pt-5,'lat_2':lat_pt+5,'lat_0':lat_pt
 # %%
 # find time index corresponding to 2023/11/15 00:00
 tind = np.where(time==np.datetime64('2023-11-22T00:00:00'))[0][0]
+lev = np.arange(-25,9,1)
 
-plot_map(ERA,tind)
+plot_map(ERA,tind,lev)
 
 if savefig:
     plt.savefig(__figdir__+'_map',**savefig_args)
@@ -130,7 +132,7 @@ for tind in range(0,len(time),2):
 # %%
 # parallel version of the above loop
 def plot_map_parallel(tind):
-    plot_map(ERA,tind)
+    plot_map(ERA,tind,lev)
     plt.savefig(movie_dir+'NORSE_map_'+str(tind).zfill(4),**savefig_args)
     plt.close()
 

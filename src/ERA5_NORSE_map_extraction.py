@@ -34,7 +34,7 @@ months = [#'01', '02', '03', '04', '05', '06', '07', '08', '09', '10',
 lon0 = -3  # NORSE=3, WHOTS=-158
 lat0 = 70  # NORSE=70, WHOTS=22.67
 dlat = 20
-dlon = 25
+dlon = 40
 region_name = 'NORSE_big'
 region_name_waves = region_name + '_waves'
 out_path = '../data/processed/'
@@ -52,6 +52,6 @@ for yr in yrs:
                   # and the third one takes very long
     tt.tic()
     output_file_waves = out_path + 'ERA5_surface_' + region_name_waves + '_' + str(yr) +'.nc'
-    #ERA5_extraction_tool.get_wave_vars(lon0, lat0, dlon, dlat, str(yr), months[0], output_file_waves)
+    ERA5_extraction_tool.get_wave_vars(lon0, lat0, dlon, dlat, str(yr), months[0], output_file_waves)
     tt.toc()
 
