@@ -35,7 +35,7 @@ import sys
 #yr = '2011'
 
 
-def get_surface_vars(lon0,lat0,dlon,dlat,yr,mm,region_name=None):
+def get_surface_vars(lon0,lat0,dlon,dlat,yr,mm,output_file=None):
     '''
     Extract ERA5 surface data using Copernicus Climate Data System API.  
     Given a geographic region and a year, saves file 'ERA5_{lon0}E_{lat0}N_{yr}.nc' in local directory
@@ -62,11 +62,8 @@ def get_surface_vars(lon0,lat0,dlon,dlat,yr,mm,region_name=None):
     'ERA5_{lon0}E_{lat0}N_{yr}.nc'
 
     '''
-    if region_name is None:
-        region_name='ERA5_'+str(round(lon0))+'E_'+str(round(lat0))+'N'
-
-    output_file_prefix = 'ERA5_surface_' + region_name
-    output_file = output_file_prefix + '_' + yr +'.nc'
+    if output_file is None:
+        output_file = 'outfile.nc'
 
     c = cdsapi.Client()
     c.retrieve(
@@ -100,12 +97,13 @@ def get_surface_vars(lon0,lat0,dlon,dlat,yr,mm,region_name=None):
     
     # Write a readme file to say when and by what script the file was written
     calling_fname = str(sys.argv[0])
-    ReadmeFile = open("readme_"+output_file_prefix+".txt", "w")
+    output_file_prefix = output_file[:-3]
+    ReadmeFile = open(output_file_prefix+"_README.txt", "w")
     ReadmeFile.write ('Written using ERA5_extraction_tool.get_surface_vars() on \n' + str(datetime.datetime.now()) + 
                       '\n Invoked from ' + calling_fname) 
     ReadmeFile.close()
 
-def get_wave_vars(lon0,lat0,dlon,dlat,yr,mm,region_name=None):
+def get_wave_vars(lon0,lat0,dlon,dlat,yr,mm,output_file=None):
     '''
     Extract ERA5 surface wave data using Copernicus Climate Data System API.  
     Given a geographic region and a year, saves file 'ERA5_{lon0}E_{lat0}N_{yr}.nc' in local directory
@@ -132,11 +130,8 @@ def get_wave_vars(lon0,lat0,dlon,dlat,yr,mm,region_name=None):
     'ERA5_{lon0}E_{lat0}N_{yr}.nc'
 
     '''
-    if region_name is None:
-        region_name='ERA5_'+str(round(lon0))+'E_'+str(round(lat0))+'N'
-
-    output_file_prefix = 'ERA5_surface_' + region_name
-    output_file = output_file_prefix + '_' + yr +'.nc'
+    if output_file is None:
+        output_file = 'outfile.nc'
 
     c = cdsapi.Client()
     c.retrieve(
@@ -171,8 +166,10 @@ def get_wave_vars(lon0,lat0,dlon,dlat,yr,mm,region_name=None):
     
     # Write a readme file to say when and by what script the file was written
     calling_fname = str(sys.argv[0])
-    ReadmeFile = open("readme_"+output_file_prefix+".txt", "w")
-    ReadmeFile.write ('Written using ERA5_extraction_tool.get_surface_vars() on \n' + str(datetime.datetime.now()) + 
+    # strip off .nc from output_file
+    output_file_prefix = output_file[:-3]
+    ReadmeFile = open(output_file_prefix+"_README.txt", "w")
+    ReadmeFile.write ('Written using ERA5_extraction_tool.get_wave_vars() on \n' + str(datetime.datetime.now()) + 
                       '\n Invoked from ' + calling_fname) 
     ReadmeFile.close()
 

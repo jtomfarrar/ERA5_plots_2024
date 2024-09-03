@@ -27,27 +27,31 @@ import Tom_tools_v1 as tt
 # N, W, S, E valid range is 90, -180, -90, 180
 # could use lon0=0 lat0=0 dlon=180 dlat=90
 yrs = np.arange(2023,2024,1) # endpoint is not included
-months = [#'01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', 
-        '12',],
+months = [#'01', '02', '03', '04', '05', '06', '07', '08', '09', '10', 
+        '11',],# '12',],
 # E-W valid range is -180, 180
 
 lon0 = -3  # NORSE=3, WHOTS=-158
 lat0 = 70  # NORSE=70, WHOTS=22.67
-dlat = 4
-dlon = 4
-region_name = 'NORSE'
+dlat = 20
+dlon = 25
+region_name = 'NORSE_big'
 region_name_waves = region_name + '_waves'
+out_path = '../data/processed/'
+
 # %%
 
 for yr in yrs:
     tt.tic()
-    #ERA5_extraction_tool.get_surface_vars(lon0, lat0, dlon, dlat, str(yr), months[0], region_name)
+    output_file_met = out_path + 'ERA5_surface_' + region_name + '_' + str(yr) +'.nc'
+    ERA5_extraction_tool.get_surface_vars(lon0, lat0, dlon, dlat, str(yr), months[0], output_file_met)
     tt.toc()
-    time.sleep(25) # I am not sure this helps, but it seems like 
+    time.sleep(5) # I am not sure this helps, but it seems like 
                   # rapid repeated requests may cause it to bog down
                   # For some reason, the first 2 requests are quickly processed
                   # and the third one takes very long
     tt.tic()
-    ERA5_extraction_tool.get_wave_vars(lon0, lat0, dlon, dlat, str(yr), months[0], region_name_waves)
+    output_file_waves = out_path + 'ERA5_surface_' + region_name_waves + '_' + str(yr) +'.nc'
+    #ERA5_extraction_tool.get_wave_vars(lon0, lat0, dlon, dlat, str(yr), months[0], output_file_waves)
     tt.toc()
 
