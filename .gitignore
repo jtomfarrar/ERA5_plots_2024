@@ -163,6 +163,8 @@ cython_debug/
 ./data/*/*
 
 *.nc
+*.png
 ./img/*
 ./img/*/*
-
+*.mp4
+*.txt
