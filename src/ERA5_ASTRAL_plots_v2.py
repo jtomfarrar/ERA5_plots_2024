@@ -23,7 +23,7 @@ from tqdm import tqdm
 home_dir = os.path.expanduser("~")
 os.chdir(home_dir+'/Python/ERA5_plots_2024/src')
 # %%
-site_name = 'NORSE'#'Lofoten_Basin'#'Jan_Mayan'#'NORSE' #can be 'NTAS', 'WHOTS', 'Stratus', or 'Papa'
+site_name = 'ASTRAL'#'Lofoten_Basin'#'Jan_Mayan'#'NORSE' #can be 'NTAS', 'WHOTS', 'Stratus', or 'Papa'
 
 if site_name=='WHOTS':
     lon_pt = -158 # WHOTS=-158
@@ -31,6 +31,9 @@ if site_name=='WHOTS':
 elif site_name=='NORSE':
     lon_pt = -6.1 #3
     lat_pt = 71 #70
+elif site_name=='ASTRAL':
+    lon_pt = 86 #3
+    lat_pt = 12 #70
 
 # %%
 __figdir__ = '../img/'
@@ -52,12 +55,32 @@ plt.rcParams['savefig.dpi'] = 400
 path = r"../data/processed/"
 
 # %%
-filename = path + 'ERA5_surface_' + site_name + '_big_2023.nc'
+filename = path + 'ERA5_surface_' + site_name + '_big_2024.nc'
 ERA = xr.open_dataset(filename)
 
-filename_wave = path + 'ERA5_surface_' + site_name + '_big_waves_2023.nc'
+filename_wave = path + 'ERA5_surface_' + site_name + '_big_waves_2024.nc'
 ERA_waves = xr.open_dataset(filename_wave)
 
+# %% 
+# Load WG data
+# Data dir
+data_dir = '/mnt/d/tom_data/ASTraL_WG/L3/'
+# make a list of the files
+file_list = os.listdir(data_dir)
+file_list
+# Alphabetical list of WGs
+WG_list = ['Ida','Kelvin', 'Pascal', 'WHOI1102','WHOI43']
+
+# Load the data
+n=0
+for WG in WG_list:
+    file = file_list[n]
+    varstr = 'ds_'+WG
+    locals()[varstr]=xr.open_dataset(data_dir+file,decode_times=True) #Time and z already fixed in WG_realtime_cleanup.ipynb
+    n=n+1
+    print(file)
+
+asfdsda
 
 # %%
 def plot_map(ERA,tind,lev):
@@ -72,7 +95,7 @@ def plot_map(ERA,tind,lev):
     lonmesh, latmesh = np.meshgrid(lon, lat)
 
     fig = plt.figure(figsize=(8,5))
-    map = Basemap(**lcc_params)
+    map = Basemap(**cyl_params)
     x,y = map(lonmesh,latmesh) # translate lat/lon to map coordinates
     map.drawcountries()
     #map.drawmapboundary(fill_color='aqua')
@@ -86,11 +109,20 @@ def plot_map(ERA,tind,lev):
     xpt, ypt = map(lon_pt, lat_pt)
     map.plot(xpt, ypt, marker='D',color='m')
     # map.quiver(xpt,ypt,np.mean(u0),np.mean(v0),scale=10,scale_units='inches',color='k')
-    skipx, skipy = 7, 2
-    scale = 500 
+    skipx, skipy = 3, 3
+    scale = 300 
     q = map.quiver(x[1:-1:skipy,1:-1:skipx],y[1:-1:skipy,1:-1:skipx],U[1:-1:skipy,1:-1:skipx],V[1:-1:skipy,1:-1:skipx],scale_units='width', scale = scale,color='k')
-    qk = plt.quiverkey(q, 0.3, 0.09, 20, '20 m/s', labelpos='E', coordinates='figure')
-
+    qk = plt.quiverkey(q, 0.3, 0.06, 10, '10 m/s', labelpos='E', coordinates='figure')
+    time0 = ERA.valid_time[tind].values
+    # convert time to dtype='datetime64[ns]'
+    # time = np.datetime64(time)
+    for WG in WG_list:
+        varstr = 'ds_'+WG
+        WG0 = eval(varstr)
+        #find the index of nearest value of time_5min to time
+        time_index = np.argmin(np.abs(WG0.time_5min.values-time0))
+        x,y = map(WG0.longitude_5min[time_index].values,WG0.latitude_5min[time_index].values)
+        map.plot(x,y,'.',label=WG)
 # %%
 def contour_SLP(ERA,tind,lev):
     sst = ERA.sst[tind,:,:]-273.15
@@ -104,7 +136,7 @@ def contour_SLP(ERA,tind,lev):
     lonmesh, latmesh = np.meshgrid(lon, lat)
 
     fig = plt.figure(figsize=(8,5))
-    map = Basemap(**lcc_params)
+    map = Basemap(**cyl_params)
     x,y = map(lonmesh,latmesh) # translate lat/lon to map coordinates
     map.drawcountries()
     #map.drawmapboundary(fill_color='aqua')
@@ -121,11 +153,20 @@ def contour_SLP(ERA,tind,lev):
     xpt, ypt = map(lon_pt, lat_pt)
     map.plot(xpt, ypt, marker='D',color='m')
     # map.quiver(xpt,ypt,np.mean(u0),np.mean(v0),scale=10,scale_units='inches',color='k')
-    skipx, skipy = 7, 2
-    scale = 500 
+    skipx, skipy = 3, 3
+    scale = 300 
     q = map.quiver(x[1:-1:skipy,1:-1:skipx],y[1:-1:skipy,1:-1:skipx],U[1:-1:skipy,1:-1:skipx],V[1:-1:skipy,1:-1:skipx],scale_units='width', scale = scale,color='k')
-    qk = plt.quiverkey(q, 0.3, 0.09, 20, '20 m/s', labelpos='E', coordinates='figure')
-
+    qk = plt.quiverkey(q, 0.3, 0.06, 10, '10 m/s', labelpos='E', coordinates='figure')
+    time0 = ERA.valid_time[tind].values
+    # convert time to dtype='datetime64[ns]'
+    # time = np.datetime64(time)
+    for WG in WG_list:
+        varstr = 'ds_'+WG
+        WG0 = eval(varstr)
+        #find the index of nearest value of time_5min to time
+        time_index = np.argmin(np.abs(WG0.time_5min.values-time0))
+        x,y = map(WG0.longitude_5min[time_index].values,WG0.latitude_5min[time_index].values)
+        map.plot(x,y,'.',label=WG)
 # %%
 def plot_SST(ERA,tind,lev):
     sst = ERA.sst[tind,:,:]-273.15
@@ -139,27 +180,33 @@ def plot_SST(ERA,tind,lev):
     lonmesh, latmesh = np.meshgrid(lon, lat)
 
     fig = plt.figure(figsize=(8,5))
-    map = Basemap(**lcc_params)
+    map = Basemap(**cyl_params)
     x,y = map(lonmesh,latmesh) # translate lat/lon to map coordinates
     map.drawcountries()
     #map.drawmapboundary(fill_color='aqua')
     map.fillcontinents(lake_color='aqua')
     C1 = map.contourf(x, y , sst, cmap='coolwarm', levels=lev)
-    #C2 = map.contour(x, y , msl, levels=lev, colors='k', linewidths=0.5)
-    #cb = plt.clabel(C2, lev, inline=True, fmt='%1.0f', fontsize=10)
-    #[txt.set_bbox(dict(boxstyle='square,pad=0',fc='red')) for txt in cb]
     map.drawcoastlines()
     map.drawparallels(range(-90, 90, 15),labels=[1,0,0,0]) #labels = [left,right,top,bottom]
     map.drawmeridians(range(0, 360, 15), labels=[0,0,0,1]) #  labels=[1,0,0,1]
     plt.title(time[tind].values)
     map.colorbar(C1, location='right', size='5%', pad='2%', label='SST ($^\circ$C)') #label='Air temp. ($^\circ$C)')
     xpt, ypt = map(lon_pt, lat_pt)
-    map.plot(xpt, ypt, marker='D',color='m')
-    skipx, skipy = 7, 2
-    scale = 500 
+    # map.plot(xpt, ypt, marker='D',color='m')
+    skipx, skipy = 3, 3
+    scale = 300 
     q = map.quiver(x[1:-1:skipy,1:-1:skipx],y[1:-1:skipy,1:-1:skipx],U[1:-1:skipy,1:-1:skipx],V[1:-1:skipy,1:-1:skipx],scale_units='width', scale = scale,color='k')
-    qk = plt.quiverkey(q, 0.3, 0.09, 20, '20 m/s', labelpos='E', coordinates='figure')
-
+    qk = plt.quiverkey(q, 0.3, 0.06, 10, '10 m/s', labelpos='E', coordinates='figure')
+    time0 = ERA.valid_time[tind].values
+    # convert time to dtype='datetime64[ns]'
+    # time = np.datetime64(time)
+    for WG in WG_list:
+        varstr = 'ds_'+WG
+        WG0 = eval(varstr)
+        #find the index of nearest value of time_5min to time
+        time_index = np.argmin(np.abs(WG0.time_5min.values-time0))
+        x,y = map(WG0.longitude_5min[time_index].values,WG0.latitude_5min[time_index].values)
+        map.plot(x,y,'.',label=WG)
 # %%
 def plot_SWH(ERA,tind,lev):
     U = ERA.u10[tind,:,:]
@@ -173,27 +220,34 @@ def plot_SWH(ERA,tind,lev):
     lonmeshw, latmeshw = np.meshgrid(lonw, latw)
 
     fig = plt.figure(figsize=(8,5))
-    map = Basemap(**lcc_params)
+    map = Basemap(**cyl_params)
     xw,yw = map(lonmeshw,latmeshw) # translate lat/lon to map coordinates
     x,y = map(lonmesh,latmesh) # translate lat/lon to map coordinates
     map.drawcountries()
     #map.drawmapboundary(fill_color='aqua')
     map.fillcontinents(lake_color='aqua')
     C1 = map.contourf(xw, yw , swh, cmap='coolwarm', levels=lev)
-    #C2 = map.contour(x, y , msl, levels=lev, colors='k', linewidths=0.5)
-    #cb = plt.clabel(C2, lev, inline=True, fmt='%1.0f', fontsize=10)
-    #[txt.set_bbox(dict(boxstyle='square,pad=0',fc='red')) for txt in cb]
     map.drawcoastlines()
     map.drawparallels(range(-90, 90, 15),labels=[1,0,0,0]) #labels = [left,right,top,bottom]
     map.drawmeridians(range(0, 360, 15), labels=[0,0,0,1]) #  labels=[1,0,0,1]
     plt.title(time[tind].values)
     map.colorbar(C1, location='right', size='5%', pad='2%', label='SWH (m)') #label='Air temp. ($^\circ$C)')
     xpt, ypt = map(lon_pt, lat_pt)
-    map.plot(xpt, ypt, marker='D',color='m')
-    skipx, skipy = 7, 2
-    scale = 500 
+    #map.plot(xpt, ypt, marker='D',color='m')
+    skipx, skipy = 3, 3
+    scale = 300 
     q = map.quiver(x[1:-1:skipy,1:-1:skipx],y[1:-1:skipy,1:-1:skipx],U[1:-1:skipy,1:-1:skipx],V[1:-1:skipy,1:-1:skipx],scale_units='width', scale = scale,color='k')
-    qk = plt.quiverkey(q, 0.3, 0.09, 20, '20 m/s', labelpos='E', coordinates='figure')
+    qk = plt.quiverkey(q, 0.3, 0.06, 10, '10 m/s', labelpos='E', coordinates='figure')
+    time0 = ERA.valid_time[tind].values
+    # convert time to dtype='datetime64[ns]'
+    # time = np.datetime64(time)
+    for WG in WG_list:
+        varstr = 'ds_'+WG
+        WG0 = eval(varstr)
+        #find the index of nearest value of time_5min to time
+        time_index = np.argmin(np.abs(WG0.time_5min.values-time0))
+        x,y = map(WG0.longitude_5min[time_index].values,WG0.latitude_5min[time_index].values)
+        map.plot(x,y,'.',label=WG)
 
 
 # %%
@@ -208,37 +262,38 @@ time = ERA.valid_time  # 'days since 1950-01-01 00:00:00'
 #lcc_params={'projection':'lcc', 'lat_1':lat_pt-5,'lat_2':lat_pt+5,'lat_0':lat_pt,'lon_0':lon_pt,'width':5*10**6,'height':5*10**6, 'resolution':'h'}
 lcc_params={'projection':'lcc', 'lat_1':65,'lat_2':70,'lat_0':70,'lon_0':-6,'llcrnrlat':59,'urcrnrlat':80,'llcrnrlon':-30,'urcrnrlon':70, 'resolution':'h'}
 ortho_params = {'projection':'ortho','lat_0':lat_pt,'lon_0':lon_pt,'resolution':'l'}
-dx=5
-dy=5
+dx=14
+dy=15
 cyl_params={'projection':'cyl', 'lat_1':lat_pt-5,'lat_2':lat_pt+5,'lat_0':lat_pt,'lon_0':lon_pt,'llcrnrlat':lat_pt-dy,'urcrnrlat':lat_pt+dy,'llcrnrlon':lon_pt-dx,'urcrnrlon':lon_pt+dx, 'resolution':'h'}
 
 
 # %%
 # find time index corresponding to 2023/11/15 00:00
-tind = np.where(time==np.datetime64('2023-11-23T02:00:00'))[0][0]
+tind = np.where(time==np.datetime64('2024-05-23T02:00:00'))[0][0]
 
 # %%
-var ='atmp' #'atmp' #'slp' #'sst' #'swh'
+var ='sst' #'atmp' #'slp' #'sst' #'swh'
 if var == 'atmp':
-    lev = np.arange(-25,9,1) # good for temperature
+    lev = np.arange(17,36,1) # good for temperature
     plot_map(ERA,tind,lev)
     if savefig:
-        plt.savefig(__figdir__+'ATMP_map',**savefig_args)
+        plt.savefig(__figdir__+'ASTRAL_ATMP_map',**savefig_args)
 elif var == 'slp':
-    lev = np.arange(950,1025,2)
+    lev = np.arange(975,1012,2)
     contour_SLP(ERA,tind,lev)
     if savefig:
-        plt.savefig(__figdir__+'SLP_map',**savefig_args)
+        plt.savefig(__figdir__+'ASTRAL_SLP_map',**savefig_args)
 elif var == 'sst':
-    lev = np.arange(-3,12,.5)
+    lev = np.arange(27,33,.5)
     plot_SST(ERA,tind,lev)
     if savefig:
-        plt.savefig(__figdir__+'SST_map',**savefig_args)
+        plt.savefig(__figdir__+'ASTRAL_SST_map',**savefig_args)
 elif var == 'swh':
-    lev = np.arange(-.1,10,.1)
+    lev = np.arange(-.1,5,.1)
     plot_SWH(ERA,tind,lev)
     if savefig:
-        plt.savefig(__figdir__+'SWH_map',**savefig_args)
+        plt.savefig(__figdir__+'ASTRAL_SWH_map',**savefig_args)
+
 # %%
 # now make a movie
 # clear contents of movie_frames directory
@@ -258,19 +313,22 @@ for tind in range(0,len(time),2):
 # %%
 # parallel version of the above loop
 def plot_map_parallel(tind):
+    plt.clf()
     if var == 'atmp': plot_map(ERA,tind,lev)
     elif var == 'slp': contour_SLP(ERA,tind,lev)
     elif var == 'sst': plot_SST(ERA,tind,lev)
     elif var == 'swh': plot_SWH(ERA,tind,lev)
-    plt.savefig(movie_dir+'NORSE_map_'+str(tind).zfill(4),**savefig_args)
+    # Plot WG positions
+
+    plt.legend()
+    plt.savefig(movie_dir+'ASTRAL_map_'+str(tind).zfill(4),**savefig_args)
     plt.close()
 
-# %%
-sdfdf
+
 # parallel version of the above loop
 if __name__ == "__main__":
     # This will parallelize a for loop over loop_idx:
-    tind = range(0,len(time))
+    tind = range(0,int(len(time)/2))
     out = process_map(plot_map_parallel, tind)
 
 # %%
@@ -287,7 +345,7 @@ command = [
     '-c:v', 'libx264',  # Codec: H.264
     '-pix_fmt', 'yuv420p',  # Pixel format
     '-crf', '17',  # Constant Rate Factor (quality), aiming for high quality
-    '../img/'+var+'_out.mp4'
+    '../img/ASTRAL_'+var+'_out.mp4'
 ]
 subprocess.run(command)
 
@@ -310,7 +368,7 @@ axs[1].grid()
 
 fig.autofmt_xdate()
 
-plt.savefig(__figdir__+'min_msl_max_wind',**savefig_args)
+plt.savefig(__figdir__+'ASTRAL_min_msl_max_wind',**savefig_args)
 
 
 # %%
