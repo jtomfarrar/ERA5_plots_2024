@@ -17,7 +17,6 @@ jfarrar@whoi.edu
 
 # %%
 import datetime as dt
-import glob
 import os
 from pathlib import Path
 
@@ -26,7 +25,7 @@ from pathlib import Path
 home_dir = os.path.expanduser("~")
 os.chdir(home_dir + "/Python/ERA5_plots_2024/src")
 
-import ERA5_extraction_tool
+from ERA5_timeseries_sites_config import SITES
 import matplotlib as mplt
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,24 +34,17 @@ from mpl_toolkits.basemap import Basemap
 
 
 # %%
-site_name =  'RAMA_12N'#'SAFARI'
+site_names = list(SITES.keys())
+site_name  = site_names[5]
+print(f'Site: {site_name}  (options: {site_names})')
 
-if site_name=="RAMA_12N":
-    lon_pt = 88.5  # 88 deg 30.0'E
-    lat_pt = 12.0  # 12 deg 00.0'N
-    dx = 20
-    dy = 15
-elif site_name=="Endurance_RCA":
-    lon_pt = -130.2  # 130 deg 12.0'W
-    lat_pt = 44.98   # 44 deg 58.8'N
-    dx = 20
-    dy = 15
-elif site_name=='SAFARI':
-    lon_pt = -161 
-    lat_pt = 35
-    dx = 60
-    dy = 25
+cfg    = SITES[site_name]
+lon_pt = cfg['lon_pt']
+lat_pt = cfg['lat_pt']
+dx     = cfg['dx']
+dy     = cfg['dy']
 
+# %%
 
 savefig = True
 plotfiletype = "png"
@@ -74,99 +66,6 @@ fig_dir.mkdir(parents=True, exist_ok=True)
 site_file = output_dir / f"ERA5_surface_{site_name}_site_timeseries.nc"
 climatology_file = output_dir / f"ERA5_surface_{site_name}_site_monthly_climatology.nc"
 extreme_wave_file = output_dir / f"ERA5_surface_{site_name}_wave_height_gt10m.txt"
-
-
-# %%
-def find_input_file():
-    pattern = str(input_dir / f"ERA5_surface_{site_name}_[0-9][0-9][0-9][0-9]_[0-9][0-9][0-9][0-9].nc")
-    files = sorted(glob.glob(pattern))
-
-    if not files:
-        raise FileNotFoundError(f"No timeseries files found for pattern: {pattern}")
-
-    return files[-1]
-
-
-# %%
-def open_timeseries_file(timeseries_file):
-    # CDS may return a ZIP that contains separate surface and wave NetCDF files.
-    # Convert that ZIP payload to a readable merged NetCDF file if needed.
-    normalized_file = ERA5_extraction_tool._ensure_netcdf_from_cds(str(timeseries_file))
-    raw_ds = xr.open_dataset(normalized_file, engine="netcdf4")
-    return raw_ds, Path(normalized_file)
-
-
-# %%
-def derive_site_variables(raw_ds):
-    derived = raw_ds.copy()
-
-    # Convert native ERA5 variables to more directly usable units.
-    tair_c = derived["t2m"] - 273.15
-    dewpoint_c = derived["d2m"] - 273.15
-    sst_c = derived["sst"] - 273.15
-    skin_temperature_c = derived["skt"] - 273.15
-    msl_hpa = derived["msl"] / 100.0
-    sw_down = derived["ssrd"] / 3600.0
-    lw_down = derived["strd"] / 3600.0
-    wind_speed = np.sqrt(derived["u10"] ** 2 + derived["v10"] ** 2)
-
-    # Calculate relative humidity from dewpoint and air temperature.
-    # Source: https://bmcnoldy.earth.miami.edu/Humidity.html
-    # See also NORSE2023_processing/src/inspect_NORSE_flux.py
-    rh = 100.0 * (
-        np.exp((17.625 * dewpoint_c) / (243.04 + dewpoint_c))
-        / np.exp((17.625 * tair_c) / (243.04 + tair_c))
-    )
-
-    sw_down_7day = sw_down.rolling(valid_time=24 * 7, center=True, min_periods=1).mean()
-
-    derived["wind_speed"] = wind_speed
-    derived["air_temperature"] = tair_c
-    derived["dewpoint_temperature"] = dewpoint_c
-    derived["sea_surface_temperature"] = sst_c
-    derived["skin_temperature"] = skin_temperature_c
-    derived["barometric_pressure"] = msl_hpa
-    derived["solar_radiation_downwards"] = sw_down
-    derived["solar_radiation_downwards_7day"] = sw_down_7day
-    derived["longwave_radiation_downwards"] = lw_down
-    derived["relative_humidity"] = rh
-    derived["wave_height"] = derived["swh"]
-    derived["wave_period"] = derived["mwp"]
-    derived["wave_direction"] = derived["mwd"]
-
-    derived["wind_speed"].attrs["units"] = "m s-1"
-    derived["air_temperature"].attrs["units"] = "degC"
-    derived["dewpoint_temperature"].attrs["units"] = "degC"
-    derived["sea_surface_temperature"].attrs["units"] = "degC"
-    derived["barometric_pressure"].attrs["units"] = "hPa"
-    derived["solar_radiation_downwards"].attrs["units"] = "W m-2"
-    # derived["solar_radiation_downwards_7day"].attrs["units"] = "W m-2"
-    derived["longwave_radiation_downwards"].attrs["units"] = "W m-2"
-    derived["relative_humidity"].attrs["units"] = "%"
-    derived["wave_height"].attrs["units"] = "m"
-    derived["wave_period"].attrs["units"] = "s"
-    derived["wave_direction"].attrs["units"] = "degree true"
-
-    keep_vars = [
-        "u10",
-        "v10",
-        "wind_speed",
-        "air_temperature",
-        "sea_surface_temperature",
-        "skin_temperature",
-        "relative_humidity",
-        "solar_radiation_downwards",
-        "longwave_radiation_downwards",
-        "barometric_pressure",
-        "wave_height",
-        "wave_period",
-        "wave_direction",
-    ]
-    site_ds = derived[keep_vars]
-    site_ds.attrs["site_name"] = site_name
-    site_ds.attrs["site_longitude"] = float(derived["longitude"].values)
-    site_ds.attrs["site_latitude"] = float(derived["latitude"].values)
-    return site_ds
 
 
 # %%
@@ -349,11 +248,11 @@ def plot_supplemental_summary(site_ds, repeated_climatology_ds=None):
 
 
 # %%
-def add_histogram_stats(ax, values):
+def add_histogram_stats(ax, values, tail_percentile=99.9):
     mean_val = float(np.nanmean(values))
     max_val = float(np.nanmax(values))
-    p99_val = float(np.nanpercentile(values, 99.9))
-    stats_text = f"mean = {mean_val:.2f}\nmax = {max_val:.2f}\n99.9% = {p99_val:.2f}"
+    p_val = float(np.nanpercentile(values, tail_percentile))
+    stats_text = f"mean = {mean_val:.2f}\nmax = {max_val:.2f}\n{tail_percentile}% = {p_val:.2f}"
     ax.text(
         0.98,
         0.98,
@@ -369,19 +268,19 @@ def add_histogram_stats(ax, values):
 def plot_histograms(site_ds):
     fig, axs = plt.subplots(3, 1, figsize=(7, 9))
     histogram_specs = [
-        ("wind_speed", "Wind speed", "[m/s]"),
-        ("wave_height", "Wave height", "[m]"),
-        ("air_temperature", "Air temperature", "[$^\circ$C]"),
+        ("wind_speed", "Wind speed", "[m/s]", 99.9),
+        ("wave_height", "Wave height", "[m]", 99.9),
+        ("air_temperature", "Air temperature", "[$^\circ$C]", 0.1),
     ]
 
-    for ax, (var_name, title, xlabel) in zip(axs, histogram_specs):
+    for ax, (var_name, title, xlabel, tail_percentile) in zip(axs, histogram_specs):
         values = site_ds[var_name].values
         values = values[np.isfinite(values)]
         ax.hist(values, bins=40, color="0.6", edgecolor="k")
         ax.set_title(title)
         ax.set_xlabel(xlabel)
         ax.set_ylabel("Count")
-        add_histogram_stats(ax, values)
+        add_histogram_stats(ax, values, tail_percentile=tail_percentile)
 
     plt.tight_layout()
     if savefig:
@@ -427,15 +326,15 @@ def repeat_monthly_climatology(site_ds, climatology_ds):
 
 # %%
 def plot_monthly_climatology(climatology_ds):
-    fig, axs = plt.subplots(5, 2, figsize=(10, 12), sharex=True)
+    fig, axs = plt.subplots(3, 3, figsize=(10, 9), sharex=True)
     month = climatology_ds["month"]
     month_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
                     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
     plot_specs = [
         ("wind_speed", "Wind speed", "[m/s]"),
-        ("u10", "u wind", "[m/s]"),
-        ("v10", "v wind", "[m/s]"),
+        ("u10", "Eastward wind", "[m/s]"),
+        ("v10", "Northward wind", "[m/s]"),
         ("wave_height", "Wave height", "[m]"),
         ("air_temperature", "Air temperature", "[$^\circ$C]"),
         ("sea_surface_temperature", "SST", "[$^\circ$C]"),
@@ -443,7 +342,6 @@ def plot_monthly_climatology(climatology_ds):
         ("relative_humidity", "Relative humidity", "[%]"),
         ("solar_radiation_downwards", "Solar radiation down", "[W/m$^2$]"),
         ("longwave_radiation_downwards", "Longwave radiation down", "[W/m$^2$]"),
-        ("barometric_pressure", "Barometric pressure", "[hPa]"),
     ]
 
     for ax, (var_name, title, ylabel) in zip(axs.flat, plot_specs):
@@ -460,10 +358,8 @@ def plot_monthly_climatology(climatology_ds):
 
 
 # %%
-def print_summary(raw_file, normalized_file, site_ds):
-    print(f"Input timeseries file: {raw_file}")
-    print(f"Normalized readable file: {normalized_file}")
-    print(f"Saved site time series: {site_file}")
+def print_summary(site_ds):
+    print(f"Loaded site time series: {site_file}")
     print(f"Saved monthly climatology: {climatology_file}")
     print(f"Saved extreme wave list: {extreme_wave_file}")
     print(site_ds)
@@ -489,17 +385,8 @@ def save_extreme_wave_events(site_ds, threshold=10.0):
     return event_ds
 
 
-# %%
-timeseries_file = find_input_file()
-
-# %%
-raw_ds, normalized_file = open_timeseries_file(timeseries_file)
-
-# %%
-site_ds = derive_site_variables(raw_ds)
-
-# %%
-save_dataset(site_ds, site_file)
+# %% Load processed site dataset (written by ERA5_timeseries_extraction.py)
+site_ds = xr.open_dataset(site_file)
 
 # %%
 climatology_ds = compute_monthly_climatology(site_ds)
@@ -529,4 +416,4 @@ plot_monthly_climatology(climatology_ds)
 extreme_wave_ds = save_extreme_wave_events(site_ds, threshold=10.0)
 
 # %%
-print_summary(timeseries_file, normalized_file, site_ds)
+print_summary(site_ds)
