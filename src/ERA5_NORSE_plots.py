@@ -21,7 +21,7 @@ from tqdm import tqdm
 # %%
 # change to the directory where this script is located
 home_dir = os.path.expanduser("~")
-os.chdir(home_dir+'/Python/ERA5_plots_2024/src')
+os.chdir(home_dir+'/Python/ERA5_extraction/src')
 # %%
 site_name = 'NORSE'#'Lofoten_Basin'#'Jan_Mayan'#'NORSE' #can be 'NTAS', 'WHOTS', 'Stratus', or 'Papa'
 

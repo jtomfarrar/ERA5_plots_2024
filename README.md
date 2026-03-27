@@ -1,4 +1,4 @@
-# ERA5_plots_2024
+# ERA5_extraction
 
 Extract ERA5 reanalysis data from the Copernicus Climate Data Store (CDS) API and produce plots and statistics for oceanographic research campaigns. Supports two workflows: long single-site timeseries (with climatology and histograms) and regional gridded maps (with spatial plots and animations).
 
@@ -21,7 +21,7 @@ https://cds.climate.copernicus.eu/api-how-to
 ## Repository structure
 
 ```
-ERA5_plots_2024/
+ERA5_extraction/
 ├── src/                  Python scripts (extraction and plotting)
 ├── data/
 │   └── processed/

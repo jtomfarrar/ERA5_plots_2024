@@ -9,7 +9,7 @@ Created on Wed Jan 20 11:02:33 2021
 import os
 
 home_dir = os.path.expanduser("~")
-os.chdir(home_dir+'/Python/ERA5_plots_2024/src')
+os.chdir(home_dir+'/Python/ERA5_extraction/src')
 
 # %%
 

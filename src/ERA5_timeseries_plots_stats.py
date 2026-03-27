@@ -5,7 +5,7 @@ Make time-series plots and statistics of ERA5 surface conditions at Endurance RC
 Refactored from earlier ERA5 plotting scripts in this repo.
 
 This version matches the single-location timeseries download written by:
-    /home/jtomf/Python/ERA5_plots_2024/src/ERA5_ASTRAL_timeseries_extraction_2025.py
+    /home/jtomf/Python/ERA5_extraction/src/ERA5_ASTRAL_timeseries_extraction_2025.py
 
 See also:
     /home/jtomf/Python/NORSE2023_processing/src/inspect_NORSE_flux.py
@@ -23,7 +23,7 @@ from pathlib import Path
 # %%
 # change to the directory where this script is located
 home_dir = os.path.expanduser("~")
-os.chdir(home_dir + "/Python/ERA5_plots_2024/src")
+os.chdir(home_dir + "/Python/ERA5_extraction/src")
 
 from ERA5_timeseries_sites_config import SITES
 import matplotlib as mplt
